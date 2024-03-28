@@ -141,6 +141,7 @@ int main() {
 
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
     Shader skybox("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+    Shader sunShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
 
     Model grassPatchModel("resources/objects/grass2/grass.obj");
     grassPatchModel.SetShaderTextureNamePrefix("material.");
@@ -189,17 +190,6 @@ int main() {
         glm::mat4 view = programState->camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
 
-        glDepthMask(GL_FALSE);
-        skybox.use();
-        skybox.setMat4("view", glm::mat4(glm::mat3(programState->camera.GetViewMatrix())));
-        skybox.setMat4("projection", projection);
-        glBindVertexArray(skyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-        glDepthMask(GL_TRUE);
-
         ourShader.use();
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
@@ -220,6 +210,30 @@ int main() {
 
         ourShader.setMat4("model", model);
         grassPatchModel.Draw(ourShader);
+
+        sunShader.use();
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 30.0f, -70.0f));
+//        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(3.0f));
+        sunShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 0.9f));
+        sunShader.setMat4("model", model);
+        sunShader.setMat4("view", view);
+        sunShader.setMat4("projection", projection);
+        sunModel.Draw(sunShader);
+
+        glDepthFunc(GL_LEQUAL);
+        glDepthMask(GL_FALSE);
+        skybox.use();
+        skybox.setMat4("view", glm::mat4(glm::mat3(programState->camera.GetViewMatrix())));
+        skybox.setMat4("projection", projection);
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
