@@ -20,6 +20,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+unsigned int loadTexture(char const* path);
 unsigned int loadCubemap(vector<std::string> faces);
 
 const unsigned int SCR_WIDTH = 800;
@@ -36,6 +37,9 @@ bool bloom = true;
 bool bloomKeyPressed = false;
 float exposure = 0.5f;
 void renderQuad();
+
+bool streetLampOn1 = true;
+bool streetLampOn2 = true;
 
 struct PointLight {
     glm::vec3 position;
@@ -54,10 +58,10 @@ struct ProgramState {
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
     glm::vec3 modelPosition = glm::vec3(0.0f);
-    float modelScale = 0.4f;
+    float modelScale = 0.05f;
     PointLight pointLight;
     ProgramState()
-            : camera(glm::vec3(0.0f, 15.0f, 0.0f)) {}
+            : camera(glm::vec3(160.0f, 25.0f, -38.0f)) {}
 };
 
 ProgramState *programState;
@@ -142,35 +146,80 @@ int main() {
             1.0f, -1.0f,  1.0f
     };
 
+    glm::vec3 vegetationPositions[] = {
+        glm::vec3(-1.0f,  0.0f, -1.0f),
+        glm::vec3( 1.0f,  0.0f,  1.0f),
+        glm::vec3( 0.0f,  0.0f,  1.0f),
+    };
+
     glEnable(GL_DEPTH_TEST);
 
-    Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
-    Shader skybox("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+    Shader pointLightShader("resources/shaders/mainLightning.vs", "resources/shaders/mainLightning.fs");
+    Shader platformShader("resources/shaders/grass.vs", "resources/shaders/grass.fs");
+    Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
     Shader sunShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
     Shader blurShader("resources/shaders/blur.vs", "resources/shaders/blur.fs");
     Shader bloomShader("resources/shaders/bloom.vs", "resources/shaders/bloom.fs");
 
-    Model grassPatchModel("resources/objects/grass2/grass.obj");
-    grassPatchModel.SetShaderTextureNamePrefix("material.");
+    Model buildingModel("resources/objects/building2/Building.obj");
+    buildingModel.SetShaderTextureNamePrefix("material.");
     Model sunModel("resources/objects/sun/sun.obj");
     sunModel.SetShaderTextureNamePrefix("material.");
+    Model platformModel("resources/objects/platform/concrete.obj");
+    platformModel.SetShaderTextureNamePrefix("material.");
+    Model streetLampModel("resources/objects/streetlamp2/StreetLamp.obj");
+    streetLampModel.SetShaderTextureNamePrefix("material.");
 
-    PointLight& pointLight = programState->pointLight;
-    pointLight.position = glm::vec3(0.0f, 40.0, 00.0);
-    pointLight.ambient = glm::vec3(50.0);
-    pointLight.diffuse = glm::vec3(5.0, 5.0, 5.0);
-    pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
-    pointLight.constant = 1.0f;
-    pointLight.linear = 0.09f;
-    pointLight.quadratic = 0.032f;
+    glm::vec3 sunPosition = glm::vec3(0.0f, 65.0f, -90.0f);
+    glm::vec3 streetLampPosition1 = glm::vec3(20.0, 0.0, -50.0);
+    glm::vec3 streetLampPosition2 = glm::vec3(20.0, 0.0, 50.0);
+    glm::vec3 streetLampLightOffset = glm::vec3(10.0, 20.0, 0.0);
+
+    PointLight& sunPointLight = programState->pointLight;
+    sunPointLight.ambient = glm::vec3(70.0);
+    sunPointLight.diffuse = glm::vec3(5.0f);
+    sunPointLight.specular = glm::vec3(1.0f);
+    sunPointLight.constant = 1.0f;
+    sunPointLight.linear = 0.09f;
+    sunPointLight.quadratic = 0.032f;
+
+    PointLight streetLampPointLight;
+    streetLampPointLight.ambient = glm::vec3(5.0f);
+    streetLampPointLight.diffuse = glm::vec3(10.0f);
+    streetLampPointLight.specular = glm::vec3(1.0f);
+    streetLampPointLight.constant = 1.0f;
+    streetLampPointLight.linear = 0.09f;
+    streetLampPointLight.quadratic = 0.032f;
+
+    float transparentVertices[] = {
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+        1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
+    unsigned int grassTex = loadTexture(FileSystem::getPath("resources/textures/sunflower.png").c_str());
+    unsigned int grassVAO, grassVBO;
+    glGenVertexArrays(1, &grassVAO);
+    glGenBuffers(1, &grassVBO);
+    glBindVertexArray(grassVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), &transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     vector<std::string> faces = {
-        "resources/cubemaps/default/right.jpg",
-        "resources/cubemaps/default/left.jpg",
-        "resources/cubemaps/default/top.jpg",
-        "resources/cubemaps/default/bottom.jpg",
-        "resources/cubemaps/default/front.jpg",
-        "resources/cubemaps/default/back.jpg"
+        "resources/cubemaps/cloudy2/px.png",
+        "resources/cubemaps/cloudy2/nx.png",
+        "resources/cubemaps/cloudy2/py.png",
+        "resources/cubemaps/cloudy2/ny.png",
+        "resources/cubemaps/cloudy2/pz.png",
+        "resources/cubemaps/cloudy2/nz.png"
     };
     unsigned int cubemapTexture = loadCubemap(faces);
 
@@ -232,10 +281,16 @@ int main() {
     bloomShader.setInt("scene", 0);
     bloomShader.setInt("bloomBlur", 1);
 
+    srand(glfwGetTime());
+    const int streetLampOnPercent = 1;
+
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        streetLampOn1 = rand() % 100 > streetLampOnPercent;
+        streetLampOn2 = rand() % 100 > streetLampOnPercent;
 
         processInput(window);
 
@@ -246,32 +301,70 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 view = programState->camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 1000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 1500.0f);
+        pointLightShader.use();
 
-        ourShader.use();
-        ourShader.setVec3("pointLight.position", pointLight.position);
-        ourShader.setVec3("pointLight.ambient", pointLight.ambient);
-        ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
-        ourShader.setVec3("pointLight.specular", pointLight.specular);
-        ourShader.setFloat("pointLight.constant", pointLight.constant);
-        ourShader.setFloat("pointLight.linear", pointLight.linear);
-        ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
-        ourShader.setVec3("viewPosition", programState->camera.Position);
-        ourShader.setFloat("material.shininess", 32.0f);
-        ourShader.setMat4("projection", projection);
-        ourShader.setMat4("view", view);
+        pointLightShader.setVec3("pointLights[0].position", sunPosition);
+        pointLightShader.setVec3("pointLights[0].ambient", sunPointLight.ambient);
+        pointLightShader.setVec3("pointLights[0].diffuse", sunPointLight.diffuse);
+        pointLightShader.setVec3("pointLights[0].specular", sunPointLight.specular);
+        pointLightShader.setFloat("pointLights[0].constant", sunPointLight.constant);
+        pointLightShader.setFloat("pointLights[0].linear", sunPointLight.linear);
+        pointLightShader.setFloat("pointLights[0].quadratic", sunPointLight.quadratic);
+
+        pointLightShader.setVec3("pointLights[1].position", streetLampPosition1 + streetLampLightOffset);
+        pointLightShader.setVec3("pointLights[1].ambient", streetLampPointLight.ambient);
+        pointLightShader.setVec3("pointLights[1].diffuse", streetLampPointLight.diffuse);
+        pointLightShader.setVec3("pointLights[1].specular", streetLampPointLight.specular);
+        pointLightShader.setFloat("pointLights[1].constant", streetLampPointLight.constant);
+        pointLightShader.setFloat("pointLights[1].linear", streetLampPointLight.linear);
+        pointLightShader.setFloat("pointLights[1].quadratic", streetLampPointLight.quadratic);
+
+        pointLightShader.setVec3("pointLights[2].position", streetLampPosition2 + streetLampLightOffset);
+        pointLightShader.setVec3("pointLights[2].ambient", streetLampPointLight.ambient);
+        pointLightShader.setVec3("pointLights[2].diffuse", streetLampPointLight.diffuse);
+        pointLightShader.setVec3("pointLights[2].specular", streetLampPointLight.specular);
+        pointLightShader.setFloat("pointLights[2].constant", streetLampPointLight.constant);
+        pointLightShader.setFloat("pointLights[2].linear", streetLampPointLight.linear);
+        pointLightShader.setFloat("pointLights[2].quadratic", streetLampPointLight.quadratic);
+
+        pointLightShader.setVec3("viewPosition", programState->camera.Position);
+        pointLightShader.setFloat("material.shininess", 32.0f);
+        pointLightShader.setMat4("projection", projection);
+        pointLightShader.setMat4("view", view);
+        pointLightShader.setBool("streetLampOn1", streetLampOn1);
+        pointLightShader.setBool("streetLampOn2", streetLampOn2);
 
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, programState->modelPosition);
         model = glm::scale(model, glm::vec3(programState->modelScale));
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+//        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        pointLightShader.setMat4("model", model);
+        buildingModel.Draw(pointLightShader);
 
-        ourShader.setMat4("model", model);
-        grassPatchModel.Draw(ourShader);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0, 0.0, 0.0));
+        model = glm::scale(model, glm::vec3(1.0f));
+//        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        pointLightShader.setMat4("model", model);
+        platformModel.Draw(pointLightShader);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, streetLampPosition1);
+        model = glm::scale(model, glm::vec3(10.0f));
+//        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        pointLightShader.setMat4("model", model);
+        streetLampModel.Draw(pointLightShader);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, streetLampPosition2);
+        model = glm::scale(model, glm::vec3(10.0f));
+//        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        pointLightShader.setMat4("model", model);
+        streetLampModel.Draw(pointLightShader);
 
         sunShader.use();
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 65.0f, -90.0f));
+        model = glm::translate(model, sunPosition);
         model = glm::scale(model, glm::vec3(4.0f));
 //        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         sunShader.setVec3("lightColor",  glm::vec3(10.0f));
@@ -280,12 +373,28 @@ int main() {
         sunShader.setMat4("projection", projection);
         sunModel.Draw(sunShader);
 
+        platformShader.use();
+
+        glBindTexture(GL_TEXTURE_2D, grassTex);
+        glActiveTexture(grassTex);
+
+        glBindVertexArray(grassVAO);
+        for(int i = 0; i < 4; i++) {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, vegetationPositions[i]);
+            model = glm::scale(model, glm::vec3(5.0f, 5.0f, 1.0f));
+            platformShader.setMat4("model", model);
+            platformShader.setMat4("view", view);
+            platformShader.setMat4("projection", projection);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
-        skybox.use();
-        skybox.setMat4("view", glm::mat4(glm::mat3(programState->camera.GetViewMatrix())));
-        skybox.setMat4("projection", projection);
-        skybox.setInt("bloom", bloom);
+        skyboxShader.use();
+        skyboxShader.setMat4("view", glm::mat4(glm::mat3(programState->camera.GetViewMatrix())));
+        skyboxShader.setMat4("projection", projection);
+        skyboxShader.setInt("bloom", bloom);
         bloomShader.setFloat("exposure", exposure);
         glBindVertexArray(skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
@@ -402,6 +511,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     }
 }
 
+/*
 unsigned int loadCubemap(vector<std::string> faces) {
     unsigned int textureID;
     glGenTextures(1, &textureID);
@@ -429,6 +539,88 @@ unsigned int loadCubemap(vector<std::string> faces) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
+*/
+
+unsigned int loadCubemap(vector<std::string> faces) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data) {
+            GLenum internalFormat;
+            GLenum dataFormat;
+            if (nrChannels == 1) {
+                internalFormat = dataFormat = GL_RED;
+            } else if (nrChannels == 3) {
+                internalFormat = GL_SRGB;
+                dataFormat = GL_RGB;
+            } else if (nrChannels == 4) {
+                internalFormat = GL_SRGB;
+                dataFormat = GL_RGBA;
+            }
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
+
+unsigned int loadTexture(char const* path) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
+    GLenum format, internalFormat;
+    if (nrChannels == 1)
+        format = internalFormat = GL_RED;
+    else if (nrChannels == 3){
+        format = GL_RGB;
+        internalFormat = GL_SRGB;
+    }
+    else if (nrChannels == 4){
+        format = GL_RGBA;
+        internalFormat = GL_SRGB_ALPHA;
+    }
+
+    if (data)
+    {
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        stbi_image_free(data);
+    }
+    else {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
 
     return textureID;
 }
