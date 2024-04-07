@@ -303,6 +303,7 @@ int main() {
         glm::mat4 view = programState->camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 1500.0f);
         pointLightShader.use();
+        glEnable(GL_CULL_FACE);
 
         pointLightShader.setVec3("pointLights[0].position", sunPosition);
         pointLightShader.setVec3("pointLights[0].ambient", sunPointLight.ambient);
@@ -372,6 +373,8 @@ int main() {
         sunShader.setMat4("view", view);
         sunShader.setMat4("projection", projection);
         sunModel.Draw(sunShader);
+
+        glDisable(GL_CULL_FACE);
 
         platformShader.use();
 
