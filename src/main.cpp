@@ -61,7 +61,8 @@ struct ProgramState {
     float modelScale = 0.05f;
     PointLight pointLight;
     ProgramState()
-            : camera(glm::vec3(160.0f, 25.0f, -38.0f)) {}
+//            : camera(glm::vec3(160.0f, 25.0f, -38.0f)) {}
+            : camera(glm::vec3(30.0f, 5.0f, -38.0f)) {}
 };
 
 ProgramState *programState;
@@ -146,12 +147,6 @@ int main() {
             1.0f, -1.0f,  1.0f
     };
 
-    glm::vec3 vegetationPositions[] = {
-        glm::vec3(-1.0f,  0.0f, -1.0f),
-        glm::vec3( 1.0f,  0.0f,  1.0f),
-        glm::vec3( 0.0f,  0.0f,  1.0f),
-    };
-
     glEnable(GL_DEPTH_TEST);
 
     Shader pointLightShader("resources/shaders/mainLightning.vs", "resources/shaders/mainLightning.fs");
@@ -201,7 +196,9 @@ int main() {
         1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
-    unsigned int grassTex = loadTexture(FileSystem::getPath("resources/textures/sunflower.png").c_str());
+    unsigned int crackTex = loadTexture(FileSystem::getPath("resources/textures/crack3.png").c_str());
+    unsigned int sunflowerTex = loadTexture(FileSystem::getPath("resources/textures/sunflower.png").c_str());
+
     unsigned int grassVAO, grassVBO;
     glGenVertexArrays(1, &grassVAO);
     glGenBuffers(1, &grassVBO);
@@ -213,6 +210,12 @@ int main() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
+    //right - px
+    //left - nx
+    //top - py
+    //bottom - ny
+    //front - pz
+    //back - nz
     vector<std::string> faces = {
         "resources/cubemaps/cloudy2/px.png",
         "resources/cubemaps/cloudy2/nx.png",
@@ -378,19 +381,29 @@ int main() {
 
         platformShader.use();
 
-        glBindTexture(GL_TEXTURE_2D, grassTex);
-        glActiveTexture(grassTex);
-
+        glBindTexture(GL_TEXTURE_2D, crackTex);
+        glActiveTexture(crackTex);
         glBindVertexArray(grassVAO);
-        for(int i = 0; i < 4; i++) {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, vegetationPositions[i]);
-            model = glm::scale(model, glm::vec3(5.0f, 5.0f, 1.0f));
-            platformShader.setMat4("model", model);
-            platformShader.setMat4("view", view);
-            platformShader.setMat4("projection", projection);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(14.0f,  0.3f, -49.0f));
+        model = glm::scale(model, glm::vec3(12.0f));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        platformShader.setMat4("model", model);
+        platformShader.setMat4("view", view);
+        platformShader.setMat4("projection", projection);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        glBindTexture(GL_TEXTURE_2D, sunflowerTex);
+        glActiveTexture(sunflowerTex);
+        glBindVertexArray(grassVAO);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(22.0f,  1.5f, -52.5f));
+        model = glm::scale(model, glm::vec3(2.5f));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        platformShader.setMat4("model", model);
+        platformShader.setMat4("view", view);
+        platformShader.setMat4("projection", projection);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
