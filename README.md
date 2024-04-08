@@ -2,6 +2,7 @@
 
 ### Includes
   - the first 7 weeks of classes + Blending, Face culling and Advanced Lighting
+  - Models
   - Group A: Cubemap
   - Group B: HDR/Bloom
 
