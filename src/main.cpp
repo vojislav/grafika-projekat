@@ -219,7 +219,7 @@ int main() {
     vector<std::string> faces = {
         "resources/cubemaps/cloudy2/px.png",
         "resources/cubemaps/cloudy2/nx.png",
-        "resources/cubemaps/cloudy2/py.png",
+        "resources/cubemaps/cloudy2/py2.png",
         "resources/cubemaps/cloudy2/ny.png",
         "resources/cubemaps/cloudy2/pz.png",
         "resources/cubemaps/cloudy2/nz.png"
@@ -304,7 +304,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 view = programState->camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 1500.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 1200.0f);
         pointLightShader.use();
         glEnable(GL_CULL_FACE);
 
