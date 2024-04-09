@@ -284,7 +284,7 @@ int main() {
     bloomShader.setInt("bloomBlur", 1);
 
     srand(glfwGetTime());
-    const int streetLampOnPercent = 2;
+    const int streetLampOnPercent = 1;
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
