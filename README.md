@@ -1,4 +1,5 @@
 # Project for the class "Computer graphics"
+[Demo video](https://youtu.be/qwjG5YeioXk)
 
 ### Includes
   - the first 7 weeks of classes + Blending, Face culling and Advanced Lighting
