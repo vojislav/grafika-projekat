@@ -7,6 +7,8 @@
   - Group B: HDR/Bloom
 
 ### Keyboard controls
+  - W/A/S/D, Mouse - move around
+  - Mouse wheel - zoom in/out
   - Space - toggle bloom on/off on sun
 
 ### Models/Textures
