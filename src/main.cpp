@@ -61,8 +61,7 @@ struct ProgramState {
     float modelScale = 0.05f;
     PointLight pointLight;
     ProgramState()
-//            : camera(glm::vec3(160.0f, 25.0f, -38.0f)) {}
-            : camera(glm::vec3(30.0f, 5.0f, -38.0f)) {}
+            : camera(glm::vec3(160.0f, 25.0f, -38.0f)) {}
 };
 
 ProgramState *programState;
@@ -285,7 +284,7 @@ int main() {
     bloomShader.setInt("bloomBlur", 1);
 
     srand(glfwGetTime());
-    const int streetLampOnPercent = 1;
+    const int streetLampOnPercent = 2;
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
